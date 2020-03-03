@@ -1,8 +1,11 @@
-Template file writer, with EnvKey support.
+Template file writer, with EnvKey.com support.
 
-- definte a template file, use `${ENV_VAR_NAME}` in it
+- definte a template file, use `${ENV_VAR_NAME}` syntax in it
 - make sure an [envkey](https://envkey.com) file or env variable is present
 - write a new file
+
+
+`v1.0.0`
 
 
 # Example
