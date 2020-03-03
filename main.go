@@ -2,29 +2,52 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/envkey/envkeygo/loader"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 )
 
-func main() {
-	// assumes file name is the only arg
-	// if there's no args, shows help
-	if 0 == flag.NArg() || 1 == flag.Narg() {
-		fmt.Printf("Need a template name and target file name!")
-	}
+var inName string
+var outName string
+var debug bool
 
-	inname := flag.Arg(0)
-	indata, err := ioutil.ReadFile(inname)
+func init() {
+	flag.StringVar(&inName, "in", "", "Input template")
+	flag.StringVar(&outName, "out", "", "Output file")
+	flag.BoolVar(&debug, "debug", false, "Debug")
+	flag.Parse()
+
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	var pathErr error
+	inName, pathErr = filepath.Abs(inName)
+	check(pathErr)
+
+	indata, err := ioutil.ReadFile(inName)
 
 	if err != nil {
-		log.Fatalf("Couldn't read the template file: %s", inname)
+		log.Fatalf("Couldn't read the template file: %s", inName)
 	}
 
 	// this is where we will write
-	outname := flag.Arg(1)
+	outName, err = filepath.Abs(outName)
+
+	if err != nil {
+		log.Fatalf("Invalid path %s", err)
+	}
+
+	if debug {
+		log.Printf("%s -> %s", inName, outName)
+	}
 
 	// Load envkey stuff, stolen from the original envkeygo
 	shouldCache := false
@@ -36,12 +59,21 @@ func main() {
 
 	// secrets should be in os' Env now
 
-	outstr := os.ExpandEnv(string(data))
+	outstr := os.ExpandEnv(string(indata))
 
 	b := []byte(outstr)
-	err := ioutil.WriteFile(outname, b, 0644)
+
+	f, e := os.Create(outName)
+	defer f.Close()
+
+	if e != nil {
+		panic(e)
+	}
+
+	_, err = f.Write(b)
 	if err != nil {
-		log.Fatalf("Couldn't write file %s", outname)
+		log.Printf("Couldn't write file %s", outName)
+		panic(err)
 	}
 
 }
